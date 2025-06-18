@@ -1,0 +1,21 @@
+# Python cache & compiled files
+__pycache__/
+*.py[cod]
+
+# Python virtual environment
+.venv/
+**/.venv/
+
+# Node.js dependencies
+node_modules/
+**/node_modules/
+
+# Terraform
+.terraform/
+**/.terraform/
+
+# Log files
+*.log
+
+# Environment files
+.env
