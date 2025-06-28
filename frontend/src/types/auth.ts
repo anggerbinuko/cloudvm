@@ -16,6 +16,7 @@ export interface User {
     isAuthenticated: boolean;
     isLoading: boolean;
     error: string | null;
+    successMessage: string | null;
   }
   
   export interface LoginCredentials {
