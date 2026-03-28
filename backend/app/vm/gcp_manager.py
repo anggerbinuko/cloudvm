@@ -324,6 +324,47 @@ class GcpVmManager:
             logger.error(f"Error deleting GCP instance {instance_id}: {str(e)}")
             raise ValueError(f"Failed to delete GCP instance: {str(e)}")
     
+    def list_all_instances(self) -> List[Dict[str, Any]]:
+        """
+        Mendapatkan semua instance VM di seluruh zona sekaligus menggunakan
+        aggregatedList — hanya 1 API call, jauh lebih efisien dari loop per zona.
+
+        Returns:
+            List of VM instances dari semua zona
+        """
+        try:
+            request = compute_v1.AggregatedListInstancesRequest(
+                project=self.project_id
+            )
+
+            all_instances = []
+            for zone_name, scoped_list in self.instance_client.aggregated_list(request=request):
+                # scoped_list.instances hanya ada jika zona tersebut punya VM
+                if scoped_list.instances:
+                    for instance in scoped_list.instances:
+                        all_instances.append({
+                            "id": str(instance.id),
+                            "name": instance.name,
+                            "machine_type": instance.machine_type.split("/")[-1],
+                            "zone": zone_name.replace("zones/", ""),
+                            "status": instance.status,
+                            "network_interfaces": [
+                                {
+                                    "network": ni.network.split("/")[-1],
+                                    "external_ip": ni.access_configs[0].nat_i_p if ni.access_configs else None,
+                                    "internal_ip": ni.network_i_p
+                                } for ni in instance.network_interfaces
+                            ],
+                            "creation_timestamp": instance.creation_timestamp
+                        })
+
+            logger.info(f"aggregatedList found {len(all_instances)} instances across all zones")
+            return all_instances
+
+        except Exception as e:
+            logger.error(f"Error listing all GCP instances via aggregatedList: {str(e)}")
+            raise
+
     def list_zones(self, specified_zones=None) -> List[str]:
         """
         Mendapatkan daftar zona yang tersedia

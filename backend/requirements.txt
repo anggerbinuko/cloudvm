@@ -34,3 +34,9 @@ pycryptodome==3.19.1
 starlette==0.36.3
 google-cloud-storage 
 google-auth-oauthlib>=1.0.0
+
+# Additional dependencies leaked from the codebase
+google-cloud-os-login
+pydantic[email]
+asyncssh
+paramiko
