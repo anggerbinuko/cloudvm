@@ -811,45 +811,12 @@ class VMService:
                 gcp_manager = self._get_gcp_manager(credentials['gcp_credentials'])
                 logger.info("Created GCP manager instance")
                 
-                # Get instances from a targeted set of zones
-                instances = []
-                zones_to_check = [
-                    "asia-southeast1-b",  # Singapore
-                    "asia-southeast1-a",  # Singapore
-                    "asia-southeast1-c",  # Singapore
-                    "asia-east1-b",       # Taiwan
-                    "asia-east1-a",       # Taiwan
-                    "asia-east1-c",       # Taiwan
-                    "us-central1-a",      # Iowa 
-                    "us-central1-b",      # Iowa
-                    "us-central1-c",      # Iowa
-                    "us-east1-b",         # South Carolina
-                    "us-east1-c",         # South Carolina
-                    "us-east1-d"          # South Carolina
-                ]
-                
-                # Get existing VMs to check their zones and add to zones_to_check
+                # Ambil semua instance sekaligus dari semua zona (1 API call)
+                instances = gcp_manager.list_all_instances()
+                logger.info(f"Retrieved {len(instances)} instances from GCP (all zones, 1 API call)")
+
+                # Get existing VMs for reconciliation
                 existing_vms = self.list_vms(user_id, provider="gcp", credential_id=credential_id)
-                
-                # Add zones from existing VMs to ensure we check all zones where VMs exist
-                for vm in existing_vms:
-                    if vm.vm_metadata and 'zone' in vm.vm_metadata:
-                        zone = vm.vm_metadata['zone']
-                        if zone and zone not in zones_to_check:
-                            zones_to_check.append(zone)
-                
-                logger.info(f"Checking {len(zones_to_check)} zones: {zones_to_check}")
-                
-                # Get instances from each zone
-                for zone in zones_to_check:
-                    try:
-                        zone_instances = gcp_manager.list_instances(zone=zone)
-                        instances.extend(zone_instances)
-                        logger.info(f"Found {len(zone_instances)} instances in zone {zone}")
-                    except Exception as e:
-                        logger.error(f"Error listing instances in zone {zone}: {str(e)}")
-                
-                logger.info(f"Retrieved {len(instances)} instances from GCP")
                 
                 # If no instances found, delete all VMs for this credential
                 if not instances:
